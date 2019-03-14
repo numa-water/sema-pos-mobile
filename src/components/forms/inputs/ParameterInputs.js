@@ -39,7 +39,7 @@ class ParameterInputs extends Component {
             if (param.unit) {
                 return `${param.name} (${param.minimum} - ${param.maximum} ${param.unit}):`;
             }
-            return `${param.name} (${param.minimum} - ${param.maximum})`;
+            return `${param.name} (${param.minimum} - ${param.maximum}):`;
         }
     }
 

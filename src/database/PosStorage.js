@@ -527,7 +527,6 @@ class PosStorage {
 			.isBetween(beginDate, endDate);
 		});
 	}
-
 	addSale(receipt) {
 		console.log("PosStorage: addSale");
 		return new Promise((resolve, reject) => {

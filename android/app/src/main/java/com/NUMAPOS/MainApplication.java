@@ -1,4 +1,4 @@
-package com.semapos;
+package com.NUMAPOS;
 
 import android.app.Application;
 
