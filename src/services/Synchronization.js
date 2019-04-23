@@ -72,71 +72,24 @@ class Synchronization {
 					const promiseSalesChannels = this.synchronizeSalesChannels();
 					const promiseCustomerTypes = this.synchronizeCustomerTypes();
 					Promise.all([promiseSalesChannels, promiseCustomerTypes])
-						.then( (values) => {
+						.then( async (values) => {
 							console.log("synchronize - SalesChannels and Customer Types: " + values);
-							const promiseCustomers = this.synchronizeCustomers()
-								.then(customerSync => {
-									syncResult.customers = customerSync;
-									return customerSync;
-								});
-							const promiseProducts = this.synchronizeProducts()
-								.then(productSync => {
-									syncResult.products = productSync;
-									return productSync;
-								});
-							const promiseSales = this.synchronizeSales()
-								.then(saleSync => {
-									syncResult.sales = saleSync;
-									return saleSync;
-								});
-							const promiseProductMrps = this.synchronizeProductMrps(lastProductSync)
-								.then(productMrpSync => {
-									syncResult.productMrps = productMrpSync;
-									return productMrpSync;
-								});
+							
+							syncResult.customers = await this.synchronizeCustomers();
 
-							const promiseReceipts = this.synchronizeReceipts()
-								.then(results => {
-									syncResult.receipts = results;
-									return results;
-								});
+							syncResult.products = await this.synchronizeProducts();
 
-							const promiseWaterOpConfigs = this.synchronizeWaterOpConfigs()
-								.then(results => {
-									syncResult.waterOpConfigs = results;
-									return results;
-								});
+							syncResult.sales = await this.synchronizeSales();
 
-							const promiseWaterOps = this.synchronizeWaterOps()
-								.then(results => {
-									syncResult.waterOps = results;
-									return results;
-								});
+							syncResult.productMrps = await this.synchronizeProductMrps(lastProductSync);
 
-							// This will make sure they run synchronously
-							[
-								promiseCustomers,
-								promiseProducts,
-								promiseSales,
-								promiseProductMrps,
-								promiseReceipts,
-								promiseWaterOpConfigs,
-								promiseWaterOps
-							]
-								.reduce((promiseChain, currentTask) => {
-									return promiseChain.then(chainResults =>
-										currentTask.then(currentResult =>
-											[ ...chainResults, currentResult ]
-										)
-									);
-								}, Promise.resolve([])).then(arrayOfResults => {
-									resolve(syncResult);
-								});	
+							syncResult.receipts = await this.synchronizeReceipts();
 
-							// Promise.all([promiseCustomers, promiseProducts, promiseSales, promiseProductMrps, promiseReceipts])
-							// 	.then(values => {
-							// 		resolve(syncResult);
-							// 	});
+							syncResult.waterOpConfigs = await this.synchronizeWaterOpConfigs();
+
+							syncResult.waterOps = await this.synchronizeWaterOps();
+
+							resolve(syncResult);
 						});
 				}).catch(error => {
 					syncResult.error = error.message;

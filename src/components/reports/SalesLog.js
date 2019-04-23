@@ -105,7 +105,10 @@ class SalesLog extends Component {
 
     componentDidMount() {
         console.log("SalesLog - componentDidMount");
-		Events.on('RemoveLocalReceipt', 'RemoveLocalReceipt2', this.onRemoveLocalReceipt.bind(this));
+        Events.on('RemoveLocalReceipt', 'RemoveLocalReceipt2', this.onRemoveLocalReceipt.bind(this));
+        // this.startDate = this.props.dateFilter.startDate;
+        // this.endDate = this.props.dateFilter.endDate;
+        // this.props.reportActions.GetSalesReportData( this.startDate, this.endDate);
     }
 
     componentWillUnmount() {
@@ -181,7 +184,7 @@ class SalesLog extends Component {
                         <Text style={styles.receiptDeleteButtonText}>X</Text>
                     </TouchableOpacity>
                 </View>
-                <Text style={{fontSize: 17}}>#{item.totalCount - index}</Text>
+                <Text style={{fontSize: 17}}>#{item.totalCount - index}{/*- {i18n.t('total-volume')}: {this._getTotalLiters()}*/}</Text>
                 <View style={styles.receiptStats}>
                     { !item.active && <Text style={styles.receiptStatusText}>{i18n.t('deleted').toUpperCase()}</Text> }
                     { (item.isLocal || item.updated) ?
@@ -205,6 +208,14 @@ class SalesLog extends Component {
             </View>
         );
     }
+
+    _getTotalLiters(){
+		if( this.props.salesData.totalLiters && this.props.salesData.totalLiters !== 'N/A' ){
+			return this.props.salesData.totalLiters;
+		} else {
+			return 0;
+		}
+	}
 
     onDeleteReceipt(item) {
         return () => {
@@ -319,7 +330,9 @@ function mapStateToProps(state, props) {
         localReceipts: state.receiptReducer.localReceipts,
         remoteReceipts: state.receiptReducer.remoteReceipts,
         customers: state.customerReducer.customers,
-        products: state.productReducer.products
+        products: state.productReducer.products,
+        // salesData: state.reportReducer.salesData,
+        // dateFilter: state.reportReducer.dateFilter
     };
 }
 

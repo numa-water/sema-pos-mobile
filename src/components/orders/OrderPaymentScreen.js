@@ -386,7 +386,7 @@ class OrderPaymentScreen extends Component {
 				// The items below are used for reporting...
 				receiptLineItem.sku = product.product.sku;
 				receiptLineItem.description = product.product.description;
-				if (product.product.unitMeasure == "liters") {
+				if (['liter', 'gallon'].includes(product.product.unitMeasure)) {
 					receiptLineItem.litersPerSku = product.product.unitPerProduct;
 				} else {
 					receiptLineItem.litersPerSku = "N/A";
