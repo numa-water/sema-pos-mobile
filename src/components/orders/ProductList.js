@@ -53,13 +53,16 @@ class ProductList extends Component {
 	prepareData = () => {
 		let productMrp = PosStorage.getProductMrps();
 
+		// We filter out the LOANPAYOFF product because it's not for frontend use
+		const actualProducts = this.props.products.filter(p => p.sku !== 'LOANPAYOFF');
+
 		if (Object.keys(productMrp).length === 0 && productMrp.constructor === Object) {
-			return this.props.products; // No mapping tables
+			return actualProducts; // No mapping tables
 		} else {
 			let salesChannel = PosStorage.getSalesChannelFromName(this.props.filter);
 
 			if(salesChannel) {
-				return this.props.products.filter(product => {
+				return actualProducts.filter(product => {
 					// If product has no mapping tables at all for the selected kiosk, display it
 					if (!this.hasMappingTable(product, productMrp)) return true;
 					// If product has a mapping with the customer's sales channel and is of the same kiosk
@@ -69,7 +72,7 @@ class ProductList extends Component {
 					return false;
 				});
 			} else {
-				return this.props.products;
+				return actualProducts;
 			}
 		}
 	}

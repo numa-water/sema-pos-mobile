@@ -96,10 +96,10 @@ const getSalesData = (beginDate, endDate) =>{
 					sku: lineItem.product.sku,
 					description: lineItem.product.description,
 					quantity: Number(lineItem.quantity),
-					pricePerSku: parseFloat(lineItem.price_total) / Number(lineItem.quantity),
+					pricePerSku: lineItem.product.sku === 'LOANPAYOFF' ? 'N/A' : parseFloat(lineItem.price_total) / Number(lineItem.quantity),
 					totalSales: parseFloat(lineItem.price_total),
-					litersPerSku: Number(lineItem.product.unitPerProduct),
-					totalLiters: Number(lineItem.product.unitPerProduct) * Number(lineItem.quantity),
+					litersPerSku: ['liter', 'gallon'].includes(lineItem.product.unitMeasure) ? Number(lineItem.product.unitPerProduct) : 'N/A',
+					totalLiters: ['liter', 'gallon'].includes(lineItem.product.unitMeasure) ? Number(lineItem.product.unitPerProduct) * Number(lineItem.quantity) : 'N/A',
 					isNew: true
 				};
 
@@ -111,12 +111,18 @@ const getSalesData = (beginDate, endDate) =>{
 			} else {
 				product.quantity += Number(lineItem.quantity);
 				product.totalSales += parseFloat(lineItem.price_total);
-				product.totalLiters += Number(lineItem.product.unitPerProduct) * Number(lineItem.quantity);
+
+				if (product.litersPerSku !== 'N/A') {
+					product.totalLiters += Number(lineItem.product.unitPerProduct) * Number(lineItem.quantity);
+				}
 
 				final.salesItems[productIndex] = product;
 			}
 
-			final.totalLiters += Number(lineItem.product.unitPerProduct) * Number(lineItem.quantity);
+			if (product.totalLiters !== 'N/A') {
+				final.totalLiters += Number(lineItem.product.unitPerProduct) * Number(lineItem.quantity);
+			}
+
 			final.totalSales += parseFloat(lineItem.price_total);
 
 			return final;

@@ -11,6 +11,7 @@ import PosStorage from '../../database/PosStorage';
 import * as Utilities from "../../services/Utilities";
 import i18n from "../../app/i18n";
 import Events from "react-native-simple-events";
+import moment from "moment-timezone";
 
 class PaymentDescription extends Component {
 	render() {
@@ -176,7 +177,7 @@ class OrderPaymentScreen extends Component {
 					checkBox = {this.state.isCredit}
 					checkBoxChange = {this.checkBoxChangeCredit.bind(this)}
 					checkBoxLabel = {i18n.t('loan')}
-					value = {Utilities.formatCurrency(this.props.payment.credit)} />
+					value = {this.props.payment.creditToDisplay} />
 			)
 		}else{
 			return null;
@@ -205,14 +206,17 @@ class OrderPaymentScreen extends Component {
 	}
 
 	calculateTotalDue(){
-		if( this.isPayoffOnly()){
-			let paymentAmount = this.props.payment.cash;
-			if( this.props.payment.hasOwnProperty("mobileToDisplay")){
-				paymentAmount = this.props.payment.mobile;
-			}
-			return this._roundToDecimal((this.calculateAmountDue() - paymentAmount));
+		if (this.isPayoffOnly()) {
+			let paymentAmount;
 
-		}else{
+			if (this.state.isMobile) {
+				paymentAmount = this.props.payment.mobile;
+			} else if (this.state.isCash) {
+				paymentAmount = this.props.payment.cash;
+			}
+
+			return this._roundToDecimal((this.calculateAmountDue() - paymentAmount));
+		} else {
 			return this._roundToDecimal((this.calculateOrderDue() + this.calculateAmountDue()));
 		}
 	}
@@ -238,7 +242,7 @@ class OrderPaymentScreen extends Component {
 		if( productMrp ){
 			return productMrp.cogsAmount;
 		}
-		return item.cogsAmount;	// Just use product price
+		return item.cogsAmount;	// Just use product cogs
 	};
 
 	_getItemMrp = (item) =>{
@@ -252,53 +256,83 @@ class OrderPaymentScreen extends Component {
 		return null;
 	};
 
-	checkBoxChangeCash=()=>{
-		this.setState({isCash:!this.state.isCash} );
-		this.setState({isMobile:!this.state.isMobile},function(){this.updatePayment(0, this.calculateOrderDue().toFixed(2))});
+	valuePaymentChange = (textValue) => {
+		let floatValue = parseFloat(textValue) || 0.00;
 
-	};
-	valuePaymentChange=(textValue)=>{
-		if(! textValue.endsWith('.')) {
-			let cashValue = parseFloat(textValue);
-			if (isNaN(cashValue)) {
-				cashValue = 0;
+		// If user is about to input a floating point number
+		if (!textValue.endsWith('.')) {
+			if (floatValue > this.calculateOrderDue()) {
+				floatValue = this.calculateOrderDue();
 			}
-			if (cashValue > this.calculateOrderDue()) {
-				cashValue = this.calculateOrderDue();
-			}
-			let credit = this._roundToDecimal(this.calculateOrderDue() - cashValue);
-			this.updatePayment(credit,textValue );
-		}else{
-			this.updatePayment(this.calculateOrderDue() - parseFloat(textValue), textValue );
+
+			let credit = this._roundToDecimal(this.calculateOrderDue() - floatValue);
+			this.updatePayment(credit, textValue);
+		} else {
+			this.updatePayment(this.calculateOrderDue() - floatValue, textValue );
 		}
 	};
 
+	checkBoxChangeCash= () => {
+		this.setState({ isMobile: !this.state.isMobile });
 
-	checkBoxChangeCredit=()=>{
-		this.setState({isCredit:!this.state.isCredit},function(){this.updatePayment(0, this.calculateOrderDue().toFixed(2))} );
+		this.setState({ isCash: !this.state.isCash }, function() {
+			this.updatePayment(
+				this.state.isCredit ? this.calculateOrderDue().toFixed(2) - this.props.payment.cash : 0,
+				this.state.isCredit ? '0.00' : this.calculateOrderDue().toFixed(2));
+		});
 	};
 
-	checkBoxChangeMobile=()=> {
-		this.setState({isMobile:!this.state.isMobile} , function(){this.updatePayment(0, this.calculateOrderDue().toFixed(2))});
-		this.setState({isCash:!this.state.isCash} );
+	checkBoxChangeCredit= () => {
+		this.setState({ isCredit: !this.state.isCredit }, function() {
+			this.updatePayment(
+				this.calculateOrderDue().toFixed(2),
+				this.state.isCredit ? '0.00' : this.calculateOrderDue().toFixed(2));
+		});
 	};
 
-	updatePayment=( credit, textToDisplay)=> {
-		let payment = {
-			cash: this.calculateOrderDue()-credit,
-			cashToDisplay: textToDisplay,
-			credit: credit,
-			mobile: 0
-		};
-		if (this.state.isMobile) {
+	checkBoxChangeMobile= () => {
+		this.setState({ isCash: !this.state.isCash });
+
+		this.setState({ isMobile: !this.state.isMobile } , function() {
+			this.updatePayment(
+				this.state.isCredit ? this.calculateOrderDue().toFixed(2) - this.props.payment.mobile : 0,
+				this.state.isCredit ? '0.00' : this.calculateOrderDue().toFixed(2));
+		});
+	};
+
+	updatePayment = (credit, textToDisplay) => {
+		let payment,
+			floatToDisplay = parseFloat(textToDisplay) || 0.00;
+
+		credit = parseFloat(credit);
+
+		if (this.state.isCredit) {
 			payment = {
-				mobile: this.calculateOrderDue()-credit,
-				mobileToDisplay: textToDisplay,
+				cash: this.state.isCash ? floatToDisplay : 0.00,
+				cashToDisplay: this.state.isCash ? textToDisplay : '0.00',
+				mobileToDisplay: this.state.isMobile ? textToDisplay : '0.00',
+				creditToDisplay: `${credit}`,
 				credit: credit,
-				cash: 0
+				mobile: this.state.isMobile ? floatToDisplay : 0.00
 			};
+		} else {
+			payment = {
+				cashToDisplay: this.state.isCash ? textToDisplay : '0.00',
+				mobileToDisplay: this.state.isMobile ? textToDisplay : '0.00',
+				credit: 0,
+				creditToDisplay: '0.00',
+			};
+
+			if (this.isPayoffOnly()) {
+				payment.cash = this.state.isCash ? floatToDisplay : 0.00;
+				payment.mobile = this.state.isMobile ? floatToDisplay : 0.00;
+			} else {
+				payment.cash = this.state.isCash ? this.calculateOrderDue() : 0.00;
+				payment.mobile = this.state.isMobile ? this.calculateOrderDue() : 0.00;
+			}
 		}
-		this.props.orderActions.SetPayment( payment );
+
+		this.props.orderActions.SetPayment(payment);
 	};
 
 	closeHandler= ()=>{
@@ -348,37 +382,103 @@ class OrderPaymentScreen extends Component {
 		);
 	};
 
-	formatAndSaveSale = () => {
-		let receipt = null;
-		let priceTotal = 0;
-		if (!this.isPayoffOnly()) {
-
-			// Assumes that there is at least one product
-			let receiptDate = new Date(Date.now());
-			receipt = {
-				id: receiptDate.toISOString(),
-				createdDate: receiptDate,
-				currencyCode: this.props.products[0].product.priceCurrency,
-				customerId: this.props.selectedCustomer.customerId,
-				amountCash: this.props.payment.cash,
-				amountLoan: this.props.payment.credit,
-				amountMobile: this.props.payment.mobile,
-				siteId: this.props.selectedCustomer.siteId,
-				paymentType: "",		// NOT sure what this is
-				salesChannelId: this.props.selectedCustomer.salesChannelId,
-				customerTypeId: this.props.selectedCustomer.customerTypeId,
-				products: [],
-				active: 1
-			};
-			if (!receipt.siteId) {
-				// This fixes issues with the pseudo direct customer
-				receipt.siteId = PosStorage.getSettings().siteId;
+	_getReceiptPaymentType() {
+		if (this.state.isCredit && this.props.payment.credit > 0) {
+			if (this.state.isCash) {
+				return 'Cash/Loan';
+			} else if (this.state.isMobile) {
+				return 'Mobile/Loan';
 			}
 
+			return 'Loan';
+		}
 
+		if (this.state.isCash) {
+			return 'Cash';
+		} else if (this.state.isMobile) {
+			return 'Mobile';
+		}
+
+		return 'Cash';
+	}
+
+	formatAndSaveSale = () => {
+		const currentUser = PosStorage.getSettings().user;
+		const creditProduct = PosStorage.getProducts().reduce((final, product) => {
+			if (product.sku === 'LOANPAYOFF') return product;
+			return final;
+		}, {});
+		let amountPaid = 0,
+			payoff = 0,
+			orderAmount = this.calculateOrderDue().toFixed(2),
+			customerDueAmount = this.props.selectedCustomer.dueAmount,
+			customerDueAmountUpdated = false;
+
+		if (this.state.isCash) {
+			amountPaid = this.props.payment.cash;
+		} else if (this.state.isMobile) {
+			amountPaid = this.props.payment.mobile;
+		}
+
+		// We don't allow any sale to be processed if the paid amount
+		// is greater than what the customer owes or greater than the cart price
+		// This can be used as some kind of wallet option
+		if (!this.isPayoffOnly()) { // If it's a purchase
+			// If the amount paid is greater than the cart price
+			// we assume customer is paying off a loan amount
+			if (amountPaid > orderAmount) {
+				// if the customer doesn't owe anything... no processing
+				if (!customerDueAmount) {
+					return false;
+				}
+
+				payoff = amountPaid - orderAmount;
+
+				// In case of overpayment... no processing
+				if (payoff > customerDueAmount) {
+					return false;
+				}
+			}
+		} else { // If it's specifically a loan payment
+			// If it's an overpayment... no processing
+			if (amountPaid > this.calculateAmountDue()) {
+				return false;
+			}
+		}
+
+		let receiptDate = new Date(Date.now());
+
+		let receipt = {
+			id: moment.tz(receiptDate, moment.tz.guess()).format('YYYY-MM-DDTHH:mm:ss.SSZ'),
+			createdDate: receiptDate,
+			customerId: this.props.selectedCustomer.customerId,
+			amountCash: this.props.payment.cash,
+			amountLoan: this.props.payment.credit,
+			amountMobile: this.props.payment.mobile,
+			siteId: this.props.selectedCustomer.siteId,
+			salesChannelId: this.props.selectedCustomer.salesChannelId,
+			customerTypeId: this.props.selectedCustomer.customerTypeId,
+			products: [],
+			active: 1,
+			userName: currentUser
+		};
+
+		receipt.paymentType = this._getReceiptPaymentType();
+
+		// This fixes issues with the pseudo direct customer
+		if (!receipt.siteId) {
+			receipt.siteId = PosStorage.getSettings().siteId;
+		}
+
+		// If the customer is purchasing, not specifically paying off a loan
+		if (!this.isPayoffOnly()) {
 			let cogsTotal = 0;
+
+			receipt.currencyCode = this.props.products[0].product.priceCurrency;
+
 			receipt.products = this.props.products.map(product => {
 				let receiptLineItem = {};
+
 				receiptLineItem.priceTotal = this.getItemPrice(product.product) * product.quantity;
 				receiptLineItem.quantity = product.quantity;
 				receiptLineItem.productId = product.product.productId;
@@ -391,84 +491,79 @@ class OrderPaymentScreen extends Component {
 				} else {
 					receiptLineItem.litersPerSku = "N/A";
 				}
-				priceTotal += receiptLineItem.priceTotal;
+
 				cogsTotal += receiptLineItem.cogsTotal;
 				receiptLineItem.active = 1;
+
 				return receiptLineItem;
 			});
-			receipt.total = priceTotal;
+
+			receipt.total = orderAmount;
 			receipt.cogs = cogsTotal;
-		}
-		// Check loan payoff
-		let payoff = 0;
-		try {
-			if (this.props.payment.hasOwnProperty("cashToDisplay")) {
-				payoff = parseFloat(this.props.payment.cashToDisplay);
-			} else if (this.props.payment.hasOwnProperty("mobileToDisplay")) {
-				payoff = parseFloat(this.props.payment.mobileToDisplay);
-			}
-			if (payoff > priceTotal) {
-				// User is paying of loan amount
-				payoff -= priceTotal;
-				if (payoff > this.props.selectedCustomer.dueAmount) {
-					// Overpayment... this is an error
-					return false;
-				}
-			} else {
-				payoff = 0;
-			}
-		} catch (err) {
-			console.log("formatAndSaveSale " + err.message);
-		}
-		if (receipt != null){
-			PosStorage.addSale(receipt)
-				.then(saleKey => {
-					Events.trigger('NewSaleAdded', {
-						key: saleKey,
-						sale: receipt
-					});
-				});
 
-			// Update dueAmount if required
+			// We increase the customer due amount if this purchase is a loan
 			if (receipt.amountLoan > 0) {
-				this.props.selectedCustomer.dueAmount += receipt.amountLoan;
-				PosStorage.updateCustomer(
-					this.props.selectedCustomer,
-					this.props.selectedCustomer.phoneNumber,
-					this.props.selectedCustomer.name,
-					this.props.selectedCustomer.address,
-					this.props.selectedCustomer.salesChannelId);
-			} else if (payoff > 0) {
-				this.props.selectedCustomer.dueAmount -= payoff;
-				PosStorage.updateCustomer(
-					this.props.selectedCustomer,
-					this.props.selectedCustomer.phoneNumber,
-					this.props.selectedCustomer.name,
-					this.props.selectedCustomer.address,
-					this.props.selectedCustomer.salesChannelId);
-
+				customerDueAmount += receipt.amountLoan;
+				customerDueAmountUpdated = true;
+			} else if (payoff) { // If this purchase has an overpayment, decrease the due amount
+				customerDueAmount -= payoff;
+				customerDueAmountUpdated = true;
 			}
-		}else {
-			if (payoff > 0) {
-				this.props.selectedCustomer.dueAmount -= payoff;
-				PosStorage.updateCustomer(
-					this.props.selectedCustomer,
-					this.props.selectedCustomer.phoneNumber,
-					this.props.selectedCustomer.name,
-					this.props.selectedCustomer.address,
-					this.props.selectedCustomer.salesChannelId);
+		} else { // If it's specifically a loan payoff
+			receipt.currencyCode = creditProduct.priceCurrency;
 
-			}
+			const receiptLineItem = {
+				quantity: 1,
+				productId: creditProduct.productId,
+				cogsTotal: creditProduct.cogsAmount,
+				sku: creditProduct.sku,
+				description: creditProduct.description,
+				active: 1,
+				priceTotal: amountPaid
+			};
+
+			// We already know this product is not a water product
+			receiptLineItem.litersPerSku = "N/A";
+
+			// By design, the LOANPAYMENT product has a price and a cogs amount of 0
+			// so no calculations needed
+			receipt.total = receiptLineItem.priceTotal;
+			receipt.cogs = receiptLineItem.cogsTotal;
+
+			receipt.products.push(receiptLineItem);
+
+			// We decrease the due amount of the customer
+			customerDueAmount -= amountPaid;
+			customerDueAmountUpdated = true;
 		}
+
+		if (customerDueAmountUpdated) {
+			this.props.selectedCustomer.dueAmount = customerDueAmount;
+
+			PosStorage.updateCustomer(
+				this.props.selectedCustomer,
+				this.props.selectedCustomer.phoneNumber,
+				this.props.selectedCustomer.name,
+				this.props.selectedCustomer.address,
+				this.props.selectedCustomer.salesChannelId,
+				this.props.selectedCustomer.customerTypeId);
+		}
+
+		// Save the receipt locally
+		PosStorage.addSale(receipt).then(saleKey => {
+			Events.trigger('NewSaleAdded', {
+				key: saleKey,
+				sale: receipt
+			});
+		});
+
 		return true;
 	};
 
-	isPayoffOnly(){
+	isPayoffOnly() {
 		return this.props.products.length === 0;
 	};
 }
-
-
 
 function mapStateToProps(state, props) {
 	return {

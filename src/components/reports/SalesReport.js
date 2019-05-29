@@ -127,7 +127,7 @@ class SalesReport extends Component {
 					<Text style={[styles.rowItemCenter]}>{this.getItemTotalLiters(item)}</Text>
 				</View>
 				<View style={[{flex: .7}]}>
-					<Text style={[styles.rowItemCenter]}>{item.pricePerSku.toFixed(2)}</Text>
+					<Text style={[styles.rowItemCenter]}>{item.pricePerSku !== 'N/A' ? item.pricePerSku.toFixed(2) : item.pricePerSku}</Text>
 				</View>
 				<View style={ [{flex: .7}]}>
 					<Text style={[styles.rowItemCenter]}>{item.totalSales.toFixed(2)}</Text>
