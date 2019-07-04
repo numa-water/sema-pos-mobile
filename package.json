@@ -1,6 +1,6 @@
 {
   "name": "NUMAPOS",
-  "version": "0.4.8",
+  "version": "0.4.9",
   "private": true,
   "scripts": {
     "start": "node node_modules/react-native/local-cli/cli.js start",
@@ -9,6 +9,9 @@
     "buildapk": "sh build_sema_apk.sh"
   },
   "dependencies": {
+    "appcenter": "2.1.0",
+    "appcenter-analytics": "2.1.0",
+    "appcenter-crashes": "2.1.0",
     "formik": "^1.5.0",
     "i18n-js": "^3.0.11",
     "intl": "~1.2.5",

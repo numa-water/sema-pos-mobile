@@ -186,7 +186,7 @@ class CustomerEdit extends Component {
 
 	}
 	getDefaultChannelValue(){
-		if( this.props.isEdit ){
+		if(this.props.isEdit && this.salesChannels){
 			for( let i = 0; i < this.salesChannels.length; i++ ){
 				if( this.salesChannels[i].id == this.props.selectedCustomer.salesChannelId ){
 					return this.salesChannels[i].displayName;
@@ -197,7 +197,7 @@ class CustomerEdit extends Component {
 	}
 
 	getDefaultTypeValue(){
-		if( this.props.isEdit ){
+		if(this.props.isEdit && this.customerTypes){
 			for( let i = 0; i < this.customerTypes.length; i++ ){
 				if( this.customerTypes[i].id == this.props.selectedCustomer.customerTypeId ){
 					return this.customerTypes[i].displayName;

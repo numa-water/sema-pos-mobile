@@ -76,7 +76,7 @@ class OrderItems extends Component {
 		return (
 			<View style={{flex: 1, flexDirection: 'row', backgroundColor:'white'} }>
 				<View style={ [{flex: 3}]}>
-					<Text style={[styles.baseItem,styles.leftMargin]}>{item.product.description}</Text>
+					<Text style={[styles.baseItem,styles.leftMargin]}>{item.product.name}</Text>
 				</View>
 				<View style={[ {flex: 1}]}>
 					<Text style={[styles.baseItem]}>{item.quantity}</Text>

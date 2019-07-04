@@ -631,7 +631,7 @@ class PosStorage {
 			.then(receiptJSON => this.parseJson(receiptJSON))
 			.then(receipt => {
 				if (!receipt) return;
-	
+
 				receipt.active = 0;
 				receipt.products = receipt.products.map(rli => {
 					rli.active = 0;
@@ -832,18 +832,22 @@ class PosStorage {
 	}
 
 	getSalesChannelFromName(name) {
-		for (let i = 0; i < this.salesChannels.length; i++) {
-			if (this.salesChannels[i].name === name) {
-				return this.salesChannels[i];
+		if (this.salesChannels) {
+			for (let i = 0; i < this.salesChannels.length; i++) {
+				if (this.salesChannels[i].name === name) {
+					return this.salesChannels[i];
+				}
 			}
 		}
 		return null;
 	}
 
 	getSalesChannelFromId(id) {
-		for (let i = 0; i < this.salesChannels.length; i++) {
-			if (this.salesChannels[i].id === id) {
-				return this.salesChannels[i];
+		if (this.salesChannels) {
+			for (let i = 0; i < this.salesChannels.length; i++) {
+				if (this.salesChannels[i].id === id) {
+					return this.salesChannels[i];
+				}
 			}
 		}
 		return null;
@@ -868,9 +872,11 @@ class PosStorage {
 		return this.customerTypes;
 	}
 	getCustomerTypeByName(name) {
-		for (let i = 0; i < this.customerTypes.length; i++) {
-			if (this.customerTypes[i].name === name) {
-				return this.customerTypes[i];
+		if (this.customerTypes) {
+			for (let i = 0; i < this.customerTypes.length; i++) {
+				if (this.customerTypes[i].name === name) {
+					return this.customerTypes[i];
+				}
 			}
 		}
 		return null;

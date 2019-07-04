@@ -93,7 +93,7 @@ class CustomerList extends Component {
 	filterItems = (data) => {
 		let filteredItems = data.filter(item => {
 			let salesChannel = this._getSalesChannelName(item.salesChannelId, this.salesChannels);
-			
+
 			if (this._isAnonymousCustomer(item)) {
 				return true;	// Anonymous client is always shown
 			}
@@ -241,10 +241,13 @@ class CustomerList extends Component {
 
 	onPressItem = (item) =>{
 		console.log("_onPressItem");
-		this.props.customerActions.CustomerSelected(item);
-		// this.setState({ selectedCustomer:item });
+		if (this.props.selectedCustomer && this.props.selectedCustomer.customerId === item.customerId) {
+			Events.trigger('onOrder', {customer: item});
+		} else {
+			this.props.customerActions.CustomerSelected(item);
+		}
+
 		this.setState({refresh: !this.state.refresh});
-		Events.trigger('onOrder', {customer: item});
 	};
 
 	showHeader = () =>{
